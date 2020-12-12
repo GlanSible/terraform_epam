@@ -1,51 +1,16 @@
+
 provider "aws" {
-    region = "eu-north-1"
-}
-
-data "aws_availability_zones" "available" {}
-
-data "aws_ami" "latest_amazon_linux" {
-    owners = ["137112412989"]
-    most_recent = true
-    filter {
-        name = "name"
-        values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-    }
+    region = var.region
 }
 
 #-----------------------------------------------
-
-resource "aws_security_group" "wp_web_serv" {
-    name = "WP sec group"
-
-    dynamic "ingress" {
-        for_each = ["80", "443"]
-        content {
-            from_port = ingress.value
-            to_port = ingress.value
-            protocol = "tcp"
-            cidr_blocks = ["0.0.0.0/0"]
-        }
-    }
-
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-
-    tags = {
-        name = "WP sec group"
-    }
-}
 
 resource "aws_launch_configuration" "web_config" {
 //  name          = "webserver-ha-lb"
   name_prefix = "webserver-ha-lb-"
   image_id      = data.aws_ami.latest_amazon_linux.id
   instance_type = "t3.micro"
-  security_groups = [aws_security_group.wp_web_serv.id]
+  security_groups = [aws_security_group.wp_web_serv.id, aws_security_group.efs_for_web.id, aws_security_group.rds_for_web.id]
   user_data = templatefile("web_data.sh.tpl", {
     f_name = "Gleb",
     l_name = "Obraztsov"
