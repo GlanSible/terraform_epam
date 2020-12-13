@@ -11,11 +11,7 @@ resource "aws_launch_configuration" "web_config" {
   image_id      = data.aws_ami.latest_amazon_linux.id
   instance_type = "t3.micro"
   security_groups = [aws_security_group.wp_web_serv.id, aws_security_group.efs_for_web.id, aws_security_group.rds_for_web.id]
-  user_data = templatefile("web_data.sh.tpl", {
-    f_name = "Gleb",
-    l_name = "Obraztsov"
-    names = ["Dima", "Sergey", "Misha", "Timur", "Konditer", "GordeYYY"]
-    })
+  user_data = file("install_wp.sh")
 
   lifecycle {
       create_before_destroy = true

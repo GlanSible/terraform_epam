@@ -3,7 +3,7 @@ resource "aws_security_group" "wp_web_serv" {
     name = "wp-sec-group"
 
     dynamic "ingress" {
-        for_each = ["80", "443"]
+        for_each = ["80", "443", "22"]
         content {
             from_port = ingress.value
             to_port = ingress.value
