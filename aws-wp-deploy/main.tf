@@ -11,15 +11,39 @@ resource "aws_launch_configuration" "web_config" {
   image_id      = data.aws_ami.latest_amazon_linux.id
   instance_type = "t3.micro"
   security_groups = [aws_security_group.wp_web_serv.id, aws_security_group.efs_for_web.id, aws_security_group.rds_for_web.id]
-  user_data = file("install_wp.sh")
+  user_data = <<EOF
+    #!/bin/bash
+    echo "${aws_efs_file_system.efs-wp.dns_name}:/ /var/www/html nfs defaults,vers=4.1 0 0" >> /etc/fstab
+    yum -y install httpd
+    amazon-linux-extras install -y php7.2
+        
+
+    sed -i 's!index.html!index.html index.php!g' /etc/httpd/conf/httpd.conf
+    service httpd start
+    systemctl enable httpd
+
+    for n in {0..60}; do
+    #  host ${aws_efs_file_system.efs-wp.dns_name} && break
+      mount -a && break
+      sleep 5
+    done
+
+    cd /tmp
+    wget https://wordpress.org/latest.tar.gz
+    tar -xzf latest.tar.gz --strip 1 -C /var/www/html
+
+    chown -R apache:apache /var/www/html
+    rm /etc/httpd/conf.d/welcome.conf
+    systemc restart httpd
+  EOF
 
   lifecycle {
       create_before_destroy = true
   }
+  depends_on = [ aws_efs_file_system.efs-wp ]
 }
 
 resource "aws_autoscaling_group" "web" {
-//    name = "webserver-HA-LB"
     name_prefix = "web-${aws_launch_configuration.web_config.name}"
     launch_configuration = aws_launch_configuration.web_config.name
     min_size = 2
