@@ -30,7 +30,12 @@ resource "aws_launch_configuration" "web_config" {
 
     cd /tmp
     wget https://wordpress.org/latest.tar.gz
+    if [ ! -f /var/www/html/index.php ]
+    then
     tar -xzf latest.tar.gz --strip 1 -C /var/www/html
+    else
+    sleep 1
+    fi
 
     chown -R apache:apache /var/www/html
     rm /etc/httpd/conf.d/welcome.conf
